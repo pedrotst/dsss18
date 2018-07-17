@@ -260,18 +260,77 @@ Definition Gprog : funspecs :=
 (** **** Exercise: 2 stars (body_pop)  *)
 Lemma body_pop: semax_body Vprog Gprog f_pop pop_spec.
 Proof.
-start_function.
-(* FILL IN HERE *) Admitted.
-(** [] *)
+  start_function.
+  unfold stack.
+  Intros y.
+  forward.
+  * entailer.
+    entailer!.
+  * unfold listrep; fold listrep.
+    Intros y'.
+    forward.
+    forward.
+    forward.
+    Intros.
+    deadvars!.
+    forward_call (Tstruct _cons noattr, y).
+    forward.
+    unfold stack.
+    Exists y'.
+    entailer!.
+Qed.
 
 (** **** Exercise: 2 stars (body_push)  *)
 Lemma body_push: semax_body Vprog Gprog f_push push_spec.
 Proof.
-start_function.
-forward_call (Tstruct _cons noattr).
-simpl; split3; auto.
-(* FILL IN HERE *) Admitted.
-(** [] *)
+  start_function.
+  forward_call (Tstruct _cons noattr).
+  * simpl in *; split3; auto.
+    unfold Int.max_unsigned.
+    unfold Int.modulus.
+    simpl.
+    Omega.omega.
+  * Intros vret.
+    forward_if (isptr vret).
+    ** if_tac; entailer!.
+    ** subst; simpl.
+       forward_call tt; entailer!.
+    ** if_tac; try contradiction.
+       forward.
+       entailer!.
+    ** if_tac.
+       subst; simpl; Intros; contradiction.
+       Intros.
+       forward.
+       simpl.
+       deadvars!.
+       destruct il; unfold stack; simpl.
+       *** Intros q; subst.
+           forward.
+           forward.
+           forward.
+           forward.
+           unfold stack.
+           Exists vret.
+           entailer!.
+           simpl.
+           Exists nullval.
+           entailer!.
+       *** Intros q.
+           Intros q'.
+           forward.
+           forward.
+           forward.
+           forward.
+           entailer!.
+           unfold stack.
+           Exists vret.
+           entailer!.
+           simpl.
+           Exists q.
+           Exists q'.
+           entailer!.
+Qed.
 
 (** **** Exercise: 2 stars (body_newstack)  *)
 Lemma body_newstack: semax_body Vprog Gprog f_newstack newstack_spec.
