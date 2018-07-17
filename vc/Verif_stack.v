@@ -335,6 +335,24 @@ Qed.
 (** **** Exercise: 2 stars (body_newstack)  *)
 Lemma body_newstack: semax_body Vprog Gprog f_newstack newstack_spec.
 Proof.
-start_function.
-(* FILL IN HERE *) Admitted.
-(** [] *)
+  start_function.
+  hint.
+  forward_call (Tstruct _stack noattr).
+  * unfold Int.max_unsigned; unfold Int.modulus; simpl.
+    repeat split; Omega.omega.
+  * Intros q.
+    forward_if (isptr q).
+    ** if_tac; entailer!.
+    ** if_tac; forward_call tt; entailer!.
+    ** if_tac; forward; entailer!.
+    ** if_tac; Intros.
+        subst; contradiction.
+        forward.
+        forward.
+        Exists q.
+        entailer!.
+        unfold stack.
+        Exists (Vint (Int.repr 0)); simpl.
+        entailer!.
+Qed.
+       
