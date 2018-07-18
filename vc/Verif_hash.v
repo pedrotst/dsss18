@@ -11,6 +11,7 @@ Require Import VST.msl.iter_sepcon.
 Require Import VST.floyd.reassoc_seq.
 Require Import VST.floyd.field_at_wand.
 Require Import Hashfun.
+Require Import Psatz.
 
 (* ================================================================= *)
 (** ** Function specifications *)
@@ -103,8 +104,11 @@ Lemma listcell_fold: forall key kp count p' p,
   cstring Tsh key kp * data_at Tsh tcell (kp, (Vint (Int.repr count), p')) p * malloc_token Tsh tcell p 
          |-- list_cell key count p' p.
 Proof. 
-(* FILL IN HERE *) Admitted.
-(** [] *)
+  intros.
+  unfold list_cell.
+  Exists kp.
+  entailer!.
+Qed.
 
 Fixpoint listrep (sigma: list (string * Z)) (x: val) : mpred :=
  match sigma with
@@ -148,12 +152,25 @@ Definition hashtable_rep (contents: hashtable_contents) (p: val) : mpred :=
 (** **** Exercise: 2 stars (hashtable_rep_hints)  *)
 Lemma hashtable_rep_local_facts: forall contents p,
  hashtable_rep contents p |-- !! (isptr p /\ Zlength contents = N).
-(* FILL IN HERE *) Admitted.
+Proof.
+  intros.
+  unfold hashtable_rep.
+  Intros bl.
+  entailer.
+  inversion H2.
+  entailer!.
+  rewrite Zlength_map in *; auto.
+Qed.
 Hint Resolve hashtable_rep_local_facts : saturate_local.
 
 Lemma hashtable_rep_valid_pointer: forall contents p,
  hashtable_rep contents p |-- valid_pointer p.
-(* FILL IN HERE *) Admitted.
+Proof.
+  intros.
+  unfold hashtable_rep.
+  Intros bl.
+  entailer!.
+Qed.
 Hint Resolve hashtable_rep_valid_pointer : valid_pointer.
 (** [] *)
 
@@ -289,6 +306,11 @@ Lemma body_hash: semax_body Vprog Gprog f_hash hash_spec.
 Proof.
 start_function.
 unfold cstring,hashfun in *.
+forward.
+forward.
+forward; try entailer!.
+unfold abbreviate in MORE_COMMANDS.
+
 (** Before doing this proof, study some of the proofs in VST/progs/verif_strlib.v.
   In the PROP part of your loop invariant, you'll want to maintain [0 <= i <= Zlength contents].
 
@@ -305,8 +327,48 @@ unfold cstring,hashfun in *.
   where X is a general formula of type [val].
  
   Late in the proof of the loop body, the lemma [hashfun_snoc] will be useful. *)
-(* FILL IN HERE *) Admitted.
-(** [] *)
+forward_while (EX i: Z,
+                     PROP (0 <= i <= Zlength contents)
+                          LOCAL (temp _n (Vint (Int.repr (hashfun (sublist 0 i contents))));
+                                 temp _i (Vint (Int.repr i));
+                                 temp _s s;
+                                 (temp _c (Vbyte (Znth i (contents ++ [Byte.zero])))))
+                     SEP (data_at Tsh  (tarray tschar (Zlength contents + 1))
+                                  (map Vbyte (contents ++ [Byte.zero])) s)
+   
+    ).
+* Exists 0.
+  entailer!.
+  (*apply H.
+  destruct contents; [contradiction | ].
+  pose proof (Zlength_cons i contents).
+  pose proof (Zlength_nonneg contents).
+  pose proof (Znth_0_cons contents i).
+  unfold In.
+  rewrite app_Znth1 in H4; [auto | lia].*)
+* entailer!.
+* forward.
+  forward.
+  autorewrite with norm in *.
+  assert (sth: 0 <= i + 1 < Zlength (contents ++ [Byte.zero])) by (autorewrite with sublist; cstring).
+  forward.
+  ** entailer!.
+     cstring.
+  ** Exists (i+1).
+     entailer!.
+     split.
+     cstring.
+     f_equal.
+     unfold hashfun.
+     rewrite hashfun_snoc; try cstring.
+     f_equal.
+     rewrite app_Znth1; cstring.
+* subst MORE_COMMANDS.
+  forward.
+  entailer!.
+  rewrite demonstrate_cstring2 with i contents; auto.
+  rewrite sublist_same; auto.
+Qed.
 
 (** **** Exercise: 3 stars (body_new_cell)  *)
 Lemma body_new_cell: semax_body Vprog Gprog f_new_cell new_cell_spec.
