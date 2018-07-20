@@ -24,7 +24,7 @@
 (** * The Selection-Sort Program  *)
 
 Require Export Coq.Lists.List.
-Require Import Perm.
+Require Import Top.Perm.
 
 (** Find (and delete) the smallest element in a list. *)
 
@@ -125,26 +125,55 @@ Proof.
   method, along with the theorem [contents_perm].  If you do,
   you'll still leave the statement of this theorem unchanged. *)
 
-intros x l; revert x.
+intros x l.
+revert x.
 induction l; intros; simpl in *.
-(* FILL IN HERE *) Admitted.
-(** [] *)
+* repeat constructor.
+* bdestruct (x <=? a); simpl.
+  ** destruct (select x l) eqn:Heq. 
+     eapply perm_trans.
+     eapply perm_swap.
+     eapply perm_trans.
+     2: eapply perm_swap.
+     apply perm_skip.
+     specialize (IHl x).
+     rewrite Heq in IHl.
+     auto.
+  ** destruct (select a l) eqn:Heq.
+     eapply perm_trans.
+     2: apply perm_swap.
+     apply perm_skip.
+     specialize (IHl a).
+     rewrite Heq in IHl.
+     auto.
+Qed.
 
 (** **** Exercise: 3 stars (selection_sort_perm)  *)
 Lemma selsort_perm:
   forall n,
   forall l, length l = n -> Permutation l (selsort l n).
 Proof.
-
+  induction n; simpl; intros; destruct l; auto.
+  * inversion H.
+  * destruct (select n0 l) eqn:Heq.
+    inversion H.
+    pose proof (select_perm n0 l).
+    rewrite Heq in H0.
+    eapply perm_trans; try eassumption.
+    constructor.
+    subst.
+    eapply IHn.
+    apply Permutation_length in H0.
+    inversion H0; auto.
+Qed.
 (** NOTE: If you wish, you may [Require Import Multiset] and use the  multiset
   method, along with the theorem [same_contents_iff_perm]. *)
-
-(* FILL IN HERE *) Admitted.
 
 Theorem selection_sort_perm:
   forall l, Permutation l (selection_sort l).
 Proof.
-(* FILL IN HERE *) Admitted.
+  intros; apply selsort_perm; auto.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars (select_smallest)  *)
@@ -156,18 +185,26 @@ Lemma select_smallest_aux:
 Proof.
 (* Hint: no induction needed in this lemma.
    Just use existing lemmas about select, along with [Forall_perm] *)
-(* FILL IN HERE *) Admitted.
+  intros.
+  assert (Forall (fun z => y <= z) (y::bl)) by (constructor; auto).
+  pose proof (select_perm x al).
+  rewrite H0 in H2.
+  apply Permutation_sym in H2.
+  pose proof (Forall_perm _ _ _ H2 H1) as H3.
+  inversion H3.
+  auto.
+Qed.
 
 Theorem select_smallest:
   forall x al y bl, select x al = (y,bl) ->
      Forall (fun z => y <= z) bl.
 Proof.
-intros x al; revert x; induction al; intros; simpl in *.
- (* FILL IN HERE *) admit.
-bdestruct (x <=? a).
-*
-destruct (select x al) eqn:?H.
- (* FILL IN HERE *) Admitted.
+  intros x al; revert x; induction al; intros; simpl in *.
+  inversion H; constructor.
+  destruct (leb x a) eqn:Heq1.
+  destruct (select x al) eqn:Heq.
+  inversion H; subst; clear H.
+(* FILL IN HERE *) Admitted.
 (** [] *)
 
 (** **** Exercise: 3 stars (selection_sort_sorted)  *)

@@ -25,7 +25,8 @@
    operating on arrays.  But it works just as well as a functional
    program operating on linked lists! *)
 
-Require Import Perm. 
+Require Import Psatz.
+Require Import Top.Perm. 
 
 Fixpoint insert (i:nat) (l: list nat) := 
   match l with
@@ -118,15 +119,41 @@ Search Permutation.
 
 Lemma insert_perm: forall x l, Permutation (x::l) (insert x l).
 Proof.
-(* FILL IN HERE *) Admitted.
+  induction l; intros; simpl; auto.
+  bdestruct (x <=? a); auto.
+  apply Permutation_trans with (a :: x :: l); constructor; auto.
+Qed.
 (** [] *)
 
+Lemma insert_perm_generic: forall x l l', Permutation l l'  -> Permutation (x::l) (insert x l').
+Proof.
+  intros.
+  induction H; simpl; auto.
+  * bdestruct (x <=? x0); auto.
+    apply perm_trans with (x0 :: x :: l); auto.
+    constructor.
+  * bdestruct (x <=? x0); auto.
+    apply perm_trans with (x :: x0 :: y :: l); auto.
+    ** repeat constructor.
+    ** destruct (x <=? y); auto.
+       apply perm_trans with (x :: x0 :: y :: l); auto; constructor.
+       apply perm_swap.
+       apply perm_trans with (x :: x0 :: y :: l); auto; try constructor; try apply perm_trans.
+       apply perm_swap.
+       apply perm_trans with (x0 :: x :: y :: l); auto; try constructor; try apply perm_trans.
+       apply perm_trans with (y :: x :: l); auto; try constructor; try apply perm_trans.
+       apply insert_perm.
+  * apply perm_trans with (x :: l'); econstructor; eauto.
+Qed.
 (** **** Exercise: 3 stars (sort_perm)  *)
 (** Now prove that sort is a permutation. *)
 
 Theorem sort_perm: forall l, Permutation l (sort l).
 Proof.
-(* FILL IN HERE *) Admitted.
+  induction l; auto.
+  simpl.
+  apply insert_perm_generic; auto.
+Qed.
 (** [] *)
 
 (** **** Exercise: 4 stars (insert_sorted)  *)
@@ -137,7 +164,14 @@ Proof.
 Lemma insert_sorted:
   forall a l, sorted l -> sorted (insert a l).
 Proof.
-(* FILL IN HERE *) Admitted.
+  intros.
+  induction H; simpl; try constructor; auto.
+  bdestruct (a <=? x); repeat constructor; try lia; auto.
+  bdestruct (a <=? x); repeat constructor; try lia; auto.
+  bdestruct (a <=? y); repeat constructor; try lia; auto.
+  simpl in IHsorted.
+  bdestruct (a <=? y); [try Omega.omega | assumption].
+Qed.
 (** [] *)
 
 (** **** Exercise: 2 stars (sort_sorted)  *)
@@ -145,7 +179,9 @@ Proof.
 
 Theorem sort_sorted: forall l, sorted (sort l).
 Proof.
-(* FILL IN HERE *) Admitted.
+  pose proof insert_sorted.
+  induction l; simpl; [constructor | eauto].
+Qed.
 (** [] *)
 
 (** Now we wrap it all up.  *)
@@ -168,6 +204,19 @@ Qed.
     confidence that we have the right specification, though of course
     it doesn't _prove_ that we do. *)
 
+Lemma sorted_cons_inv: forall x l, sorted (x :: l) -> sorted l.
+Proof.
+  intros.
+  inversion H; subst; eauto.
+  constructor.
+Qed.
+
+Lemma nth_cons: forall (d: nat) i a l,  nth (S i) (a::l) d = nth i l d.
+Proof.
+  reflexivity.
+Qed.
+
+Require Import Structures.Equalities.
 (** **** Exercise: 4 stars, optional (sorted_sorted')  *)
 Lemma sorted_sorted': forall al, sorted al -> sorted' al.
 
@@ -175,6 +224,44 @@ Lemma sorted_sorted': forall al, sorted al -> sorted' al.
     on the _sortedness_ of [al]. This proof is a bit tricky, so
     you may have to think about how to approach it, and try out
     one or two different ideas.*)
+  intros.
+  induction H; try constructor; unfold sorted'; try (simpl; intros; destruct i; lia).
+  intros.
+  pose proof (sorted_cons_inv _ _ H0) as ?H.
+  clear H0. simpl in H1.
+  unfold sorted' in IHsorted.
+  destruct i eqn:Heq1, j eqn:Heq2.
+  * simpl; auto.
+  * rewrite nth_cons.
+    apply Nat.le_trans with (nth 0 (y :: l) 0); auto.
+    destruct (eq_dec n 0).
+    apply IHsorted; eauto.
+    inversion H1.
+    split; try lia.
+    inversion H1.
+    inversion H0; subst; try lia.
+    
+    Omega.omega. lia.
+    inversion H0.
+
+    simpl.
+    simpl.
+    pose proof (nth_cons 0 j x (y :: l)).
+    rewrite H0.
+    subst.
+
+    rewrite nth_cons.
+
+    apply IHsorted.
+
+    simpl.
+    destruct j; auto.
+
+    rewrite nth_cons.
+  * admit.
+  *  rewrite ?nth_cons.
+     apply IHsorted; simpl; lia.
+
 
 (* FILL IN HERE *) Admitted.
 (** [] *)

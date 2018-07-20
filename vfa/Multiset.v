@@ -9,8 +9,8 @@
     representation of a multiset is a function from values to [nat]. *)
 
 Require Import Coq.Strings.String.
-Require Import Perm.
-Require Import Sort.
+Require Import Top.Perm.
+Require Import Top.Sort.
 Require Export FunctionalExtensionality.
 
 (** In this chapter we will be using natural numbers for two different
@@ -27,7 +27,7 @@ Definition multiset := value -> nat.
     [empty] multiset, and the multiset with just a single element. *)
 
 Definition empty : multiset :=
-   fun x => 0.
+   fun _ => 0.
 
 Definition union (a b : multiset) : multiset :=
    fun x => a x + b x.
@@ -45,14 +45,21 @@ Lemma union_assoc: forall a b c : multiset, (* assoc stands for "associative" *)
 Proof.
   intros.
   extensionality x.
-(* FILL IN HERE *) Admitted.
+  unfold union.
+  rewrite plus_assoc_reverse.
+  auto.
+Qed.
 (** [] *)
 
 (** **** Exercise: 1 star (union_comm)  *)
 Lemma union_comm: forall a b : multiset,  (* comm stands for "commutative" *)
    union a b = union b a.
 Proof.
-(* FILL IN HERE *) Admitted.
+  intros.
+  extensionality x.
+  unfold union.
+  apply plus_comm.
+Qed.
 (** [] *)
 
 (** Remark on efficiency:  These multisets aren't very efficient.  If
@@ -103,14 +110,34 @@ Definition is_a_sorting_algorithm' (f: list nat -> list nat) :=
 
 Lemma insert_contents: forall x l, contents (x::l) = contents (insert x l).
 Proof.
-(* FILL IN HERE *) Admitted.
+  intros.
+  revert x.
+  induction l; intros; simpl.
+  * unfold union, singleton, empty; auto.
+  * bdestruct (x <=? a).
+    ** reflexivity.
+    ** simpl.
+       erewrite <- IHl.
+       simpl.
+       rewrite union_assoc.
+       rewrite union_comm with (b:= singleton a).
+       rewrite union_assoc.
+       reflexivity.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars (sort_contents)  *)
 (** Now prove that sort preserves contents. *)
 
 Theorem sort_contents: forall l, contents l = contents (sort l).
-(* FILL IN HERE *) Admitted.
+Proof.
+  induction l; auto.
+  simpl.
+  rewrite IHl.
+  rewrite <- insert_contents.
+  simpl.
+  reflexivity.
+Qed.
 (** [] *)
 
 (** Now we wrap it all up.  *)
@@ -126,13 +153,13 @@ Qed.
     of [insert_contents, sort_contents].  Which proofs are simpler?
 
       - [ ] easier with permutations,
-      - [ ] easier with multisets
+      - [X] easier with multisets
       - [ ] about the same.
 
    Regardless of "difficulty", which do you prefer / find easier to
    think about?
       - [ ] permutations or
-      - [ ] multisets
+      - [X] multisets
 
    Put an X in one box in each list. *)
 (* Do not modify the following line: *)
@@ -155,7 +182,16 @@ Definition manual_grade_for_permutations_vs_multiset : option (prod nat string) 
 Lemma perm_contents:
   forall al bl : list nat,
    Permutation al bl -> contents al = contents bl.
-(* FILL IN HERE *) Admitted.
+Proof.
+  intros.
+  induction H; simpl; eauto.
+  * rewrite IHPermutation; auto.
+  * rewrite union_assoc.
+    rewrite union_comm with (b:= singleton x).
+    rewrite union_assoc.
+    auto.
+  * congruence.
+Qed.
 (** [] *)
 
 (** The other direction,
@@ -180,10 +216,18 @@ Proof.
   intros.
   extensionality x.
   induction al.
-  simpl. unfold empty, multiset_delete.
-  bdestruct (x =? v); auto.
-  simpl.
-  bdestruct (a =? v).
+  * simpl. unfold empty, multiset_delete.
+    bdestruct (x =? v); auto.
+  * simpl.
+    bdestruct (a =? v).
+    unfold multiset_delete.
+    bdestruct (x =? v).
+    simpl.
+
+    subst.
+    simpl.
+    simpl.
+    simpl.
   (* FILL IN HERE *) Admitted.
 (** [] *)
 

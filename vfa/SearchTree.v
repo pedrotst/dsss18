@@ -21,7 +21,7 @@
    of binary search trees. *)
 
 Require Import Coq.Strings.String.
-Require Import Perm.
+Require Import Top.Perm.
 Require Import FunctionalExtensionality.
 
 (* ################################################################# *)
@@ -32,7 +32,7 @@ Require Import FunctionalExtensionality.
     VFA's [Maps] module is almost exactly the same, except that it
     implements functions from [nat] to some arbitrary type [A]. *)
 
-Require Import Maps.
+Require Import Top.Maps.
 
 (* ################################################################# *)
 (** * Sections *)
@@ -115,7 +115,7 @@ Definition key := nat.
 
 Inductive tree : Type :=
  | E : tree
- | T: tree -> key -> V -> tree -> tree.
+ | T : tree -> key -> V -> tree -> tree.
 
 Definition empty_tree : tree := E.
 
@@ -311,6 +311,7 @@ evar (m: total_map V).
 replace (example_map v2 v4 v5) with m; subst m.
 repeat constructor.
 extensionality x.
+unfold t_update, combine, t_empty. 
 (* HINT:
   First,    [unfold example_map, t_update, combine, t_empty, beq_id.]
   Then, repeat the following procedure:  If you see something like
@@ -357,6 +358,7 @@ Theorem insert_relate:
     Abs t cts ->
     Abs (insert k v t) (t_update cts k v).
 Proof.
+  induction 1.
 (* FILL IN HERE *) Admitted.
 (** [] *)
 

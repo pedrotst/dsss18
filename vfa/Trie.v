@@ -69,8 +69,8 @@
 (** * A Simple Program That's Waaaaay Too Slow. *)
 
 Require Import Coq.Strings.String.
-Require Import Perm.
-Require Import Maps.
+Require Import Top.Perm.
+Require Import Top.Maps.
 Import FunctionalExtensionality.
 
 Module VerySlow.
@@ -225,6 +225,8 @@ Definition add (x y: positive) : positive := addc false x y.
 Lemma succ_correct: forall p,
    positive2nat (succ p) = S (positive2nat p).
 Proof.
+  induction p; simpl; try omega.
+Qed.
 (* FILL IN HERE *) Admitted.
 (** [] *)
 

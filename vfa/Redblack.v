@@ -45,8 +45,8 @@ _Journal of Functional Programming_, 9(4):471-477, July 1999.
    integers. We don't repeat the [Extract] commands, because they are
    imported implicitly from Extract.v *)
 
-Require Import Perm.
-Require Import Extract.
+Require Import Top.Perm.
+Require Import Top.Extract.
 Require Import Coq.Lists.List. 
 Export ListNotations.
 
@@ -470,7 +470,20 @@ inv H.
 unfold balance.
 repeat match goal with
  | H: Abs E _ |- _ => inv H
-end.
+ | H: Abs (T _ _ _ _ _) _|- _ => inv H
+ | H: SearchTree' _ E _ |- _ => inv H
+ | H: SearchTree' _ (T _ _ _ _ _) _ |- _ => inv H
+ | |- Abs match ?c with Red => _ | Black => _ end _ => destruct c
+ | |- Abs match ?s with E => _ | T _ _ _ _ _  => _ end _ => destruct s
+ | |- Abs E _ => apply Abs_E
+ | |- Abs (T _ _ _ _ _) (t_update _ _ _ _) => eapply Abs_T
+ | |- _ => eapply Abs_helper; [repeat econstructor; eassumption | ]; auto
+end;
+  match goal with
+  | H: SearchTree' _ _ _ |- _ => specialize (SearchTree'_le _ _ _  H); intros
+  end;
+try contents_equivalent_prover.
+
 (** Add these clauses, one at a time, to your [repeat match goal] tactic,
    and try it out:
    -1. Whenever a clause [H: Abs E _] is above the line, invert it by [inv H].

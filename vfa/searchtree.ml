@@ -20,9 +20,7 @@ let empty_tree =
 let rec lookup default x = function
 | E -> default
 | T (tl, k, v, tr) ->
-  if (<) x k
-  then lookup default x tl
-  else if (<) k x then lookup default x tr else v
+  if (<) x k then lookup default x tl else if (<) k x then lookup default x tr else v
 
 (** val insert : key -> 'a1 -> 'a1 tree -> 'a1 tree **)
 
@@ -33,8 +31,7 @@ let rec insert x v = function
   then T ((insert x v a), y, v', b)
   else if (<) y x then T (a, y, v', (insert x v b)) else T (a, x, v, b)
 
-(** val elements' :
-    'a1 tree -> (key, 'a1) prod list -> (key, 'a1) prod list **)
+(** val elements' : 'a1 tree -> (key, 'a1) prod list -> (key, 'a1) prod list **)
 
 let rec elements' s base =
   match s with
