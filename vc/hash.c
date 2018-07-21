@@ -19,7 +19,7 @@ unsigned int hash (char *s) {
 }
 
 struct cell {
-  char *key;
+  char *ke
   unsigned int count;
   struct cell *next;
 };

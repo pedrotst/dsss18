@@ -414,6 +414,8 @@ forward.  (* s = 0; *)
 
 (** To do symbolic execution through a [while] loop, use the
    [forward_while] tactic; you must supply a loop invariant. *)
+unfold abbreviate in LOOP_BODY.
+subst LOOP_BODY.
 forward_while
  (EX i: Z,
    PROP  (0 <= i <= size)
