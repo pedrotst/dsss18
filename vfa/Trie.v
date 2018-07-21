@@ -227,8 +227,14 @@ Lemma succ_correct: forall p,
 Proof.
   induction p; simpl; try omega.
 Qed.
-(* FILL IN HERE *) Admitted.
 (** [] *)
+
+Lemma succ_addc: forall p q,
+    succ (addc false p q) = addc true p q.
+Proof.
+  induction p, q; simpl; auto; rewrite IHp; auto.
+Qed.
+
 
 (** **** Exercise: 3 stars (addc_correct)  *)
 (** You may use [omega] in this proof if you want, along with induction
@@ -238,12 +244,55 @@ Qed.
     like this one.  So the authors of the Coq standard library had to
     do the associative-commutative rearrangement proofs "by hand."
     But really, here you can use [omega] without penalty. *)
+Ltac simplify_nat := repeat (rewrite Nat.add_0_r in * || rewrite Nat.add_0_l in *
+                                                                                || rewrite Nat.add_succ_r in *|| rewrite Nat.add_succ_l in * ||
+                            rewrite Nat.add_assoc in *).
 
 Lemma addc_correct: forall (c: bool) (p q: positive),
    positive2nat (addc c p q) =
         (if c then 1 else 0) + positive2nat p + positive2nat q.
 Proof.
-(* FILL IN HERE *) Admitted.
+  induction p, q; destruct c; simpl;
+    repeat match goal with
+           | |- S _ = S _ => apply f_equal
+           | |- context[positive2nat (succ _)] => rewrite succ_correct
+           | |- context[_ + _ + (?q + ?x)] => rewrite plus_assoc
+           | H: context[positive2nat (addc ?c ?p _)] |- context[positive2nat (addc ?c ?p _)] => rewrite H
+           | H: context[positive2nat ?p + positive2nat _] |- context[positive ?p + positive2nat _] => rewrite <- H
+           | _ => simplify_nat; auto
+           end;
+    try (apply Nat.add_cancel_r;
+         rewrite <- Nat.add_assoc;
+         rewrite <- Nat.add_assoc;
+         apply Nat.add_cancel_l;
+         rewrite Nat.add_comm; auto).
+
+  * rewrite Nat.add_comm with (m:= positive2nat q).
+    simplify_nat.
+    rewrite Nat.add_comm with (m:= positive2nat p).
+    rewrite Nat.add_comm with (m:= positive2nat q).
+    rewrite Nat.add_comm with (m:= positive2nat p).
+    rewrite <- (IHp q).
+    simplify_nat.
+    rewrite Nat.add_comm with (m:= positive2nat p).
+    rewrite <- (IHp q).
+    rewrite <- Nat.add_succ_r.
+    rewrite <-Nat.add_succ_l.
+    rewrite <- ?succ_correct; auto.
+    rewrite succ_addc; auto.
+  * specialize (IHp q).
+    rewrite plus_Sn_m in IHp.
+    rewrite <- succ_addc in IHp.
+    rewrite succ_correct in IHp.
+    inversion IHp.
+    rewrite ?H0.
+    rewrite Nat.add_assoc.
+    rewrite Nat.add_cancel_r.
+    rewrite <- ?Nat.add_assoc.
+    rewrite Nat.add_cancel_l.
+    rewrite Nat.add_comm.
+    reflexivity.
+Qed.
 
 Theorem add_correct: forall (p q: positive),
    positive2nat (add p q) = positive2nat p + positive2nat q.
