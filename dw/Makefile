@@ -1,19 +1,10 @@
--include CONFIGURE
-ifeq ($(VST_LOC),)
-$(info VST_LOC is not defined!)
-$(info Create a CONFIGURE file containing this definition:)
-$(info VST_LOC= .../file/path/to/VST)
-$(info and optionally (if you have installed CompCert/clightgen) containing this:)
-$(info CC_LOC= .../file/path/to/CompCert)
-$(info or instead of a CONFIGURE file, you may define these as environment variables.)
-$(error "VST_LOC not defined")
-endif
-ifeq ($(CC_LOC),)
-  CC_LOC=$(VST_LOC)/compcert
-endif
-
-VST_DIRS= msl sepcomp veric floyd progs
-VSTFLAGS= -Q $(CC_LOC) compcert $(foreach d, $(VST_DIRS), -Q $(VST_LOC)/$(d) VST.$(d))
+SERVER = out/dw-swap-server
+EXCLUDE= Proofs Spec/TopLevelSpec.v Spec/Vst Spec/main.v \
+		 Lib/VstLib.v html \
+         Spec/Swap_SimpleSpec_Examples.v
+OCAMLBUILDFLAGS=-libs unix,str
+QC = quickChick -color -top "" -ocamlbuild '$(OCAMLBUILDFLAGS)' \
+	 -cmd '$(MAKE) coq-qc' $(QCFLAGS)
 
 coq: Makefile.coq $(EXTR_BIN)
 	@$(MAKE) -f $<
@@ -21,9 +12,52 @@ coq: Makefile.coq $(EXTR_BIN)
 Makefile.coq: _CoqProject
 	coq_makefile -f $< -o $@
 
-_CoqProject: _CoqConfig
-	echo "$(VSTFLAGS)" > _CoqProject
-	cat _CoqConfig >> _CoqProject
+build-with-vst:
+	make -f Makefile.vst build
+
+test:
+	$(MAKE) testcoq
+	$(MAKE) testexternal
+
+testcoq:
+	$(QC) -s CLikeTest -exclude $(EXCLUDE)
+
+testexternal: $(SERVER)
+	$(QC) -s ExternalTest -N 100 -exclude $(EXCLUDE)
+
+$(SERVER): DeepWeb/Spec/main.c DeepWeb/Spec/macros.h
+	mkdir -p out/
+	$(CC) -IDeepWeb/Spec/ $< -o $@
+
+server: $(SERVER) stop
+	exec $< &
+
+stop:
+	@if [ -n "$$(pgrep "$(notdir $(SERVER))")" ]; then pkill "$(notdir $(SERVER))"; fi
+
+coq-qc: $(SERVER)
+	@perl -i -p0e 's/^(Separate Extraction)(\s+\S+)*?((\s+test\S+)*)\s*\.$$/\1\3./m' QuickChickTop.v
+	@echo "-Q . ''" > _CoqProject.tmp
+	@cat _CoqProject >> _CoqProject.tmp
+	@coq_makefile -f _CoqProject.tmp -o Makefile.tmp
+	@make -f Makefile.tmp QuickChickTop.vo
+	@echo 'let _ = print_endline "done"' >> QuickChickTop.ml
+
+html:
+	$(MAKE) -f Makefile.coq -j
+	$(MAKE) -f Makefile.coq html
 
 clean:
-	# TODO
+	-rm -rf ../_qc_dw.tmp/
+	$(MAKE) -f Makefile.coq clean
+
+.PHONY: html clean coq-qc test coq
+
+# Just for BCP
+bcp:
+	$(MAKE) -C $(HOME)/dw/src dsss18
+	$(MAKE) -j
+	$(MAKE) -j html COQDOCFLAGS="-interpolate -utf8 --parse-comments"
+	osascript $(HOME)/s/tools/safari-reload.as
+	$(MAKE) -j test
+

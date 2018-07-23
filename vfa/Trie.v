@@ -328,10 +328,12 @@ Fixpoint compare x y {struct x}:=
   match x, y with
     | p~1, q~1 => compare p q
     | p~1, q~0 => match compare p q with Lt => Lt | _ => Gt end
-    | p~1, xH => Gt
-
-  (* DELETE THIS CASE!  Replace it with cases that actually work. *)
-    | _, _ => Lt
+    | p~0, q~0 => compare p q
+    | p~0, q~1 => match compare p q with Gt => Gt | _ => Lt end
+    | xH, q~0 => Lt
+    | xH, q~1 => Lt
+    | xH, xH => Eq
+    | _, xH => Gt
   end.
 
 Lemma positive2nat_pos:
@@ -341,6 +343,8 @@ intros.
 induction p; simpl; omega.
 Qed.
 
+Require Import Psatz.
+
 Theorem compare_correct:
  forall x y,
   match compare x y with
@@ -349,9 +353,13 @@ Theorem compare_correct:
   | Gt => positive2nat x > positive2nat y
  end.
 Proof.
-induction x; destruct y; simpl.
-(* FILL IN HERE *) Admitted.
-(** [] *)
+induction x; destruct y; simpl in *;
+try pose proof (positive2nat_pos x);
+try pose proof (positive2nat_pos y);
+try specialize (IHx y);
+try destruct (compare x y);
+lia.
+Qed.
 
 (** Claim: [compare x y] takes time proportional to the log base 2 of [x].
      Proof: it's structurally inductive on the height of [x]. *)
@@ -416,7 +424,7 @@ Fixpoint loop (input: list Z) (c: Z) (table: total_mapz bool) : Z :=
 Definition collisions (input: list Z) := loop input 0 (empty false).
 
 Example collisions_pi: collisions [3;1;4;1;5;9;2;6]%Z = 1%Z.
-Proof. reflexivity. Qed.
+Proof.  simpl. reflexivity. Qed.
 
 End RatherSlow.
 

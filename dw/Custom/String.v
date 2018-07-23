@@ -1,12 +1,15 @@
-Require Bool.
-Require List.
-Import List.ListNotations.
-Require NArith.
+(* String utilities. *)
 
-Require Export String.
-Require Export Strings.Ascii.
+From Coq Require
+     Bool List NArith.
+Import List.ListNotations.
+
+From Coq Require Export
+     String Ascii.
 
 From QuickChick Require Import QuickChick.
+
+Infix ":::" := String (at level 60, right associativity) : string_scope.
 
 Definition ascii_eq (l r : Ascii.ascii) : bool :=
   match l , r with
@@ -68,6 +71,10 @@ Definition isDigit (c : ascii) : bool :=
   let n := N_of_ascii c in
      andb (48 <=? n) (n <=? 57).
 
+Definition isPrintable (c : ascii) : bool :=
+  let n := N_of_ascii c in
+  andb (32 <=? n) (n <=? 127).
+
 Inductive chartype := white | alpha | digit | other.
 
 Definition classifyChar (c : ascii) : chartype :=
@@ -118,6 +125,22 @@ Fixpoint reverse_string' (s s' : string) : string :=
 
 Definition reverse_string (s : string) : string :=
   reverse_string' s EmptyString.
+
+Fixpoint repeat_string (c : ascii) (n : nat) :=
+  match n with
+  | O => ""
+  | S n => String c (repeat_string c n)
+  end.
+
+Lemma repeat_string_length:
+  forall c n,
+    String.length (repeat_string c n) = n.
+Proof.
+  induction n; auto.
+  simpl.
+  f_equal.
+  assumption.
+Qed.
 
 (* Use n here as the ranking function to show that this terminates.
    Use (length l) should be enough. *)
@@ -181,12 +204,12 @@ Global Instance shrinkAscii : Shrink ascii :=
 
 Fixpoint shrinkStringAux (s:string) :=
   match s with
-  | EmptyString => []
-  | String c cs =>
-           [cs]
-        ++ List.map (fun c' => String c' cs) (shrink c)
-        ++ List.map (fun cs' => String c cs') (shrinkStringAux cs)
-  end%list.
+  | "" => nil
+  | c ::: cs =>
+    (  [cs]
+    ++ List.map (fun c' => String c' cs) (shrink c)
+    ++ List.map (fun cs' => String c cs') (shrinkStringAux cs))%list
+  end.
 
 Global Instance shrinkString : Shrink string :=
   {| shrink := shrinkStringAux |}.
